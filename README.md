@@ -6,13 +6,18 @@ A 3D football "ball battle" simulation for YouTube Shorts and Instagram Reels. T
 
 No install, API keys or accounts needed. Download `index.html` and open it in **Chrome or Edge**. An internet connection is needed for the 3D engine (three.js) and fonts.
 
-## This branch: v2
+## This branch: v3
 
-Everything in v1, plus:
+Everything in v2, plus:
 
-- **Built-in Shorts recorder.** Records only the 9:16 arena (1080x1920, 60 fps) with game sound when you press Kick off, stops a few seconds after full time and downloads the video (MP4 or WebM).
-- Scoreboard, banners and branding are drawn on a canvas so they appear inside the recorded video.
-- Settings: auto-record, 1080p or 720p, 60 or 30 fps, seconds to keep recording after full time, auto-download.
+- **Logos built in.** 184 club crests (from the Club_Crests 2026-27 pack) and the flags of all 211 FIFA national teams load automatically when a team is picked.
+- Full 2026-27 squads for the Premier League, LaLiga, Serie A and Ligue 1; national teams grouped by confederation.
+- Search by short names too ("Man City", "PSG", "Inter").
+- "Upload your own logo" still overrides the built-in one; "Use built-in logo" switches back.
+- Crests are centred and fully inside the ball and scoreboard; flags fill the ball.
+- Bigger balls, sharper crests and larger, high-contrast text for phone screens.
+
+National flags: [flag-icons](https://github.com/lipis/flag-icons) (MIT licence).
 
 ## Versions
 
