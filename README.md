@@ -6,15 +6,13 @@ A 3D football "ball battle" simulation for YouTube Shorts and Instagram Reels. T
 
 No install, API keys or accounts needed. Download `index.html` and open it in **Chrome or Edge**. An internet connection is needed for the 3D engine (three.js) and fonts.
 
-## This branch: v1
+## This branch: v2
 
-- 3D arena built with three.js: neon ring that changes colour, glow (bloom), comet trails, sparks, camera shake.
-- A moving 3D goal net on the ring. Hitting it scores, with slow motion, a GOAL! burst, horn and crowd sound.
-- 90-minute clock (15 to 90 seconds on screen), then FULL TIME with the winner and confetti.
-- 238 built-in clubs and national teams, searchable, and any custom team can be typed in.
-- Upload a logo per team (fills the ball and the scoreboard crest).
-- Channel branding: channel name, YouTube and Instagram handles, subscribe pop-up, sub goal bar.
-- Studio mode: full-screen 9:16 arena for screen recording.
+Everything in v1, plus:
+
+- **Built-in Shorts recorder.** Records only the 9:16 arena (1080x1920, 60 fps) with game sound when you press Kick off, stops a few seconds after full time and downloads the video (MP4 or WebM).
+- Scoreboard, banners and branding are drawn on a canvas so they appear inside the recorded video.
+- Settings: auto-record, 1080p or 720p, 60 or 30 fps, seconds to keep recording after full time, auto-download.
 
 ## Versions
 
