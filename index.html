@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ball Derby Arena v3</title>
+<title>Ball Derby Arena v4</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Russo+One&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -120,6 +120,11 @@ body.studio #stageBox{border-radius:0}
 #recBadge{position:absolute;top:8px;left:8px;z-index:5;display:none;align-items:center;gap:6px;font:12px 'Russo One';color:#fff;background:#000b;border:1px solid #ff3355;padding:4px 9px;border-radius:14px}
 #recBadge i{width:9px;height:9px;border-radius:50%;background:#ff2244;animation:blink 1s infinite}
 body.rec #recBadge{display:flex}
+.fold{display:flex;align-items:center;gap:10px;background:#070910;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.fold div{flex:1}.fold small{display:block;color:var(--mute);font-size:12px}.fold strong{font:15px Rubik;font-weight:700;word-break:break-all}
+#savedList{list-style:none;margin:8px 0 0;padding:0;font-size:13px}
+#savedList li{padding:7px 0;border-top:1px solid var(--line);color:#cfe;word-break:break-word}
+#savedList li b{color:var(--gold);font-weight:500}
 @keyframes blink{50%{opacity:.25}}
 select{width:100%;font:15px Rubik;color:var(--ink);background:#070910;border:1px solid var(--line);border-radius:9px;padding:9px 10px;min-height:44px;margin-top:4px}
 .clip{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
@@ -139,10 +144,10 @@ select{width:100%;font:15px Rubik;color:var(--ink);background:#070910;border:1px
  <div id="stageWrap"><div id="stageBox"><div id="stage">
   <canvas id="gl"></canvas>
   <canvas id="hud"></canvas>
- </div><div id="recBadge"><i></i>REC <span id="recTime">0:00</span></div></div></div>
+ </div></div></div>
 
  <aside id="panel">
-  <h1>Ball Derby Arena <span style="font-size:14px;color:var(--gold);vertical-align:middle">v3</span></h1>
+  <h1>Ball Derby Arena <span style="font-size:14px;color:var(--gold);vertical-align:middle">v4</span></h1>
   <p class="sub">Two crests, one neon ring, a goal that never stops moving. Every match is random.</p>
 
   <h2>Teams</h2>
@@ -171,21 +176,22 @@ select{width:100%;font:15px Rubik;color:var(--ink);background:#070910;border:1px
    </div>
    <p class="note">The channel name is a suggestion. Check it's free on YouTube and Instagram before you commit.</p>
   </div>
-  <h2>Shorts recorder</h2>
+  <h2>Match videos</h2>
   <div class="card">
-   <div class="tg">Record every match automatically<input type="checkbox" id="recOn" checked></div>
+   <p class="note" style="margin:0 0 10px">Every match is recorded in 9:16 and saved on its own into your folder, in a sub-folder named after the two teams.</p>
+   <div class="fold"><div><small>Saving to</small><strong id="folderName">No folder chosen yet</strong></div><button class="btn sm" id="pickFolder">Choose folder</button></div>
+   <div class="tg">Save every match<input type="checkbox" id="recOn" checked></div>
    <div class="grid2">
     <label class="fld">Video size<select id="recQ"><option value="1080">1080 × 1920 (Full HD)</option><option value="720">720 × 1280 (lighter)</option></select></label>
     <label class="fld">Frame rate<select id="recF"><option value="60">60 fps</option><option value="30">30 fps</option></select></label>
    </div>
-   <label class="fld" style="margin-top:8px">Keep recording after full time: <b id="tailV">3</b> s<input type="range" id="recTail" min="1" max="8" step="1" value="3"></label>
-   <div class="tg">Download automatically when the match ends<input type="checkbox" id="recDl" checked></div>
+   <label class="fld" style="margin-top:8px">Keep filming after full time: <b id="tailV">3</b> s<input type="range" id="recTail" min="1" max="8" step="1" value="3"></label>
    <p class="note" id="recFmt"></p>
-   <div id="recOut"></div>
+   <ul id="savedList"></ul>
   </div>
  </aside>
 </div>
-<div id="dock"><button class="btn go" id="kick">Kick off</button><button class="btn" id="recStop" hidden>■ Stop &amp; save</button><button class="btn" id="studio">Studio mode</button></div>
+<div id="dock"><button class="btn go" id="kick">Kick off</button><button class="btn" id="studio">Studio mode</button></div>
 <button class="btn sm" id="exitStudio">× Exit studio</button>
 
 <script>
@@ -201,7 +207,7 @@ const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 const $=s=>document.querySelector(s);
 
 /* ---------------- SETTINGS ---------------- */
-const KEY='ballDerby.v3';
+const KEY='ballDerby.v4';
 let S={home:'Manchester City',away:'Real Madrid',custom:{},colors:{},dur:30,snd:true,subOn:true,banner:'REQUEST YOUR MATCH',rec:true,recQ:'1080',recF:'60',recTail:3,recDl:true,ch:'ORBIT DERBY',yt:'@orbitderby',ig:'@orbitderby',cur:442,goal:500};
 try{const j=JSON.parse(localStorage.getItem(KEY)||'null');if(j)S=Object.assign(S,j)}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
@@ -274,13 +280,13 @@ function crestCanvas(sd,shaded){
 
 /* ---------------- THREE SETUP ---------------- */
 const R=5,BR=.74,BY=.78,GH=.19,ST=$('#stage');
-const renderer=new THREE.WebGLRenderer({canvas:$('#gl'),antialias:true,preserveDrawingBuffer:true});
+const renderer=new THREE.WebGLRenderer({canvas:$('#gl'),antialias:true});
 renderer.setClearColor(0x06070a);
 const scene=new THREE.Scene(),top=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(40,360/640,.1,300);
 (function(){const d=17,W=12.4,hf=2*Math.atan(W/2/d);camera.fov=2*Math.atan(Math.tan(hf/2)/(360/640))*180/Math.PI;camera.updateProjectionMatrix()})();
 let composer=null,bloom=null;
-try{if(THREE.EffectComposer&&THREE.UnrealBloomPass){composer=new THREE.EffectComposer(renderer);composer.addPass(new THREE.RenderPass(scene,camera));bloom=new THREE.UnrealBloomPass(new THREE.Vector2(360,640),.95,.5,.28);composer.addPass(bloom)}}catch(e){composer=null}
+try{if(THREE.EffectComposer&&THREE.UnrealBloomPass){composer=new THREE.EffectComposer(renderer);composer.addPass(new THREE.RenderPass(scene,camera));bloom=new THREE.UnrealBloomPass(new THREE.Vector2(360,640),.95,.5,.28);composer.addPass(bloom);{const bs=bloom.setSize.bind(bloom);bloom.setSize=(w,h)=>bs(Math.max(2,Math.round(w/2)),Math.max(2,Math.round(h/2)))}}}catch(e){composer=null}
 
 function gradTex(stops,Z=128){const c=document.createElement('canvas');c.width=c.height=Z;const g=c.getContext('2d'),gr=g.createRadialGradient(Z/2,Z/2,0,Z/2,Z/2,Z/2);stops.forEach(s=>gr.addColorStop(s[0],s[1]));g.fillStyle=gr;g.fillRect(0,0,Z,Z);return new THREE.CanvasTexture(c)}
 const dotTex=gradTex([[0,'rgba(255,255,255,1)'],[.3,'rgba(255,255,255,.8)'],[1,'rgba(255,255,255,0)']],64);
@@ -367,7 +373,7 @@ function refreshSide(i){
  for(const k of [0,1]){const b=balls[k],sd=side[k];if(!sd.name)continue;
   b.tex.image=crestCanvas(sd,true);b.tex.anisotropy=renderer.capabilities.getMaxAnisotropy();b.tex.needsUpdate=true;b.halo.material.color.copy(sd.trail);b.pool.material.color.copy(sd.trail)}
  const sd=side[i];if(!sd.name)return;
- const hc=crestCanvas(sd,false),url=hc.toDataURL();sd.hud=hc;sd.label=((sd.short||sd.name).length>13?sd.code:(sd.short||sd.name)).toUpperCase();
+ hudVer++;const hc=crestCanvas(sd,false),url=hc.toDataURL();sd.hud=hc;sd.label=((sd.short||sd.name).length>13?sd.code:(sd.short||sd.name)).toUpperCase();
  const box=$('#tp'+i);if(box.querySelector('img'))box.querySelector('img').src=url;
  if(box.querySelector('strong'))box.querySelector('strong').textContent=sd.name;
  const c1=box.querySelector('.c1'),c2=box.querySelector('.c2');if(c1){c1.value=sd.c1;c2.value=sd.c2}
@@ -425,7 +431,7 @@ function horn(){[233,294,349,466].forEach((f,k)=>tone(f,1.1,'sawtooth',.045,1.01
 function bounce(sp,base){const now=performance.now();if(now-lastSnd<45)return;lastSnd=now;tone(base+sp*25,.09,'square',.04+Math.min(.06,sp*.006),.6)}
 
 /* ---------------- GAME STATE ---------------- */
-let state='idle',tState=0,elapsed=0,score=[0,0],shake=0,flash=0,ringIdx=0,slow=1,clock=0,ftT=0,winner=-1;
+let glowHex='ff2bd6',state='idle',tState=0,elapsed=0,score=[0,0],shake=0,flash=0,ringIdx=0,slow=1,clock=0,ftT=0,winner=-1;
 const NEON=['#ff2bd6','#ff7a1a','#ffe81a','#19e6ff','#8a2bff','#1aa3ff','#22ffc8','#ff3b6b'].map(c=>new THREE.Color(c));
 const ringCol=new THREE.Color('#ff2bd6');
 function centerBalls(){balls.forEach((b,k)=>{b.x=k?BR*1.12:-BR*1.12;b.z=0;b.vx=b.vz=0;b.inNet=false;b.trail.clear()})}
@@ -437,7 +443,7 @@ function kickoff(){
  if(REC.on)recStop(true);if(S.rec)recStart();
  centerBalls();goalMat.color.set(0xffffff);gA=Math.random()*Math.PI*2;gW=(.4+Math.random()*.45)*(Math.random()<.5?-1:1);state='kick';tState=0;whistle(.45);$('#kick').textContent='Restart';
 }
-$('#kick').addEventListener('click',kickoff);
+$('#kick').addEventListener('click',async()=>{audio();if(S.rec&&FS)await ensureFolder();kickoff()});
 $('#swap').addEventListener('click',()=>{[S.home,S.away]=[S.away,S.home];save();loadSide(0,S.home);loadSide(1,S.away)});
 $('#rnd').addEventListener('click',()=>{const nat=Math.random()<.35,pool=TEAMS.filter(t=>!!t.nat===nat);let a=pool[Math.random()*pool.length|0],b;do b=pool[Math.random()*pool.length|0];while(b===a);S.home=a.name;S.away=b.name;save();loadSide(0,a.name);loadSide(1,b.name)});
 const studio=on=>{document.body.classList.toggle('studio',on);if(on){try{document.documentElement.requestFullscreen?.().catch(()=>{})}catch(e){}}else{try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}}fit()};
@@ -508,7 +514,7 @@ function loop(now){
 
  // ring colour
  const ix=state==='idle'?Math.floor(T/2.5):Math.floor(elapsed/(S.dur/10)),target=NEON[((ix%NEON.length)+NEON.length)%NEON.length];
- ringCol.lerp(target,Math.min(1,rdt*4));flash=Math.max(0,flash-rdt*1.6);
+ ringCol.lerp(target,Math.min(1,rdt*4));glowHex=target.getHexString();flash=Math.max(0,flash-rdt*1.6);
  const rc=ringCol.clone().lerp(WHITE,flash*.7);ringMat.color.copy(rc);outerMat.color.copy(rc);glowMat.color.copy(rc);coreMat.color.copy(rc.clone().lerp(WHITE,.65));glowMat.opacity=.75+flash*.6;
  hudTick(rdt);
 
@@ -530,9 +536,8 @@ function loop(now){
  camera.lookAt(0,0,0);
  composer?composer.render():renderer.render(scene,camera);
  renderer.autoClear=false;renderer.clearDepth();renderer.render(top,camera);renderer.autoClear=true;
- drawHUD(hudG,hudK,true);
- if(REC.on){const g=REC.g;g.setTransform(1,0,0,1,0,0);g.drawImage(renderer.domElement,0,0,REC.W,REC.H);drawHUD(g,REC.W/360,false);
-  const sec=(now-REC.t0)/1000|0;if(sec!==REC.sec){REC.sec=sec;$('#recTime').textContent=`${sec/60|0}:${String(sec%60).padStart(2,'0')}`}
+ const sig=hudSig();if(sig===null||sig!==hudLast){hudLast=sig;drawHUD(hudG,hudK,true);if(REC.on){REC.hg.setTransform(1,0,0,1,0,0);REC.hg.clearRect(0,0,REC.W,REC.H);drawHUD(REC.hg,REC.W/360,false)}}
+ if(REC.on){const g=REC.g;g.drawImage(renderer.domElement,0,0,REC.W,REC.H);g.drawImage(REC.hud,0,0);
   if(REC.stopAt&&now>REC.stopAt)recStop(false)}
  requestAnimationFrame(loop);
 }
@@ -551,6 +556,12 @@ function hudTick(dt){
 }
 function arrow(g,x,y){g.fillStyle='#ffd21f';g.fillRect(x-2,y-6,4,5);g.beginPath();g.moveTo(x-5,y-1.5);g.lineTo(x+5,y-1.5);g.lineTo(x,y+5);g.closePath();g.fill()}
 function txt(g,t,x,y,fill,ow=3){g.lineWidth=ow;g.strokeStyle='rgba(0,0,0,.85)';g.strokeText(t,x,y);g.fillStyle=fill;g.fillText(t,x,y)}
+let hudLast='',hudVer=0;
+function hudSig(){ // null = something is animating, redraw every frame
+ const tgt=Math.min(1,S.cur/Math.max(1,S.goal));
+ if(H.goalT<1.75||H.bumpT<.65||(H.subA>.004&&H.subA<.996)||(H.subA>.5&&(H.cur<1||H.clickT<1.6))||state==='ft'||(H.ftA>.004&&H.ftA<.996)||Math.abs(H.sg-tgt)>.003)return null;
+ return [clock,score[0],score[1],state==='idle',glowHex,S.banner,S.ch,S.yt,S.ig,S.cur,S.goal,hudVer,hudK].join('|');
+}
 function drawHUD(g,k,clear){
  g.setTransform(k,0,0,k,0,0);if(clear)g.clearRect(0,0,360,640);
  g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';
@@ -587,7 +598,7 @@ function drawHUD(g,k,clear){
   g.font="17px 'Russo One',sans-serif";const tw=g.measureText(H.ftTxt).width+30;rr(g,180-tw/2,292,tw,30,15);g.fillStyle='rgba(0,0,0,.7)';g.fill();g.lineWidth=1;g.strokeStyle='rgba(255,255,255,.22)';g.stroke();
   g.fillStyle='#fff';g.fillText(H.ftTxt,180,307.5);g.restore()}
  // channel name
- g.save();g.font="25px 'Russo One',sans-serif";g.lineWidth=4;g.strokeStyle='rgba(0,0,0,.9)';g.strokeText(S.ch,180,512);g.fillStyle='#fff';g.shadowColor='#'+ringCol.getHexString();g.shadowBlur=16;g.fillText(S.ch,180,512);g.shadowBlur=0;g.fillText(S.ch,180,512);g.restore();
+ g.save();g.font="25px 'Russo One',sans-serif";g.lineWidth=4;g.strokeStyle='rgba(0,0,0,.9)';g.strokeText(S.ch,180,512);g.fillStyle='#fff';g.shadowColor='#'+glowHex;g.shadowBlur=16;g.fillText(S.ch,180,512);g.shadowBlur=0;g.fillText(S.ch,180,512);g.restore();
  // handles
  g.font="700 13px Rubik,sans-serif";const items=[['yt',S.yt],['ig',S.ig]].filter(x=>x[1]),ws=items.map(x=>g.measureText(x[1]).width+44);let hx=180-(ws.reduce((a,b)=>a+b,0)+8*(items.length-1))/2;
  items.forEach(([t,tx],n)=>{const w=ws[n];rr(g,hx,530,w,25,12.5);g.fillStyle='rgba(255,255,255,.13)';g.fill();const ix=hx+10,iy=536;
@@ -608,36 +619,50 @@ function pickMime(){if(!window.MediaRecorder)return'';for(const m of['video/mp4;
 const slug=t=>t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 function recStart(){
  const mime=pickMime();if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream){$('#recFmt').textContent='This browser cannot record. Use Chrome or Edge.';return}
- const W=S.recQ==='720'?720:1080;REC.W=W;REC.H=W*16/9;REC.cv=document.createElement('canvas');REC.cv.width=REC.W;REC.cv.height=REC.H;REC.g=REC.cv.getContext('2d');
+ const W=S.recQ==='720'?720:1080;REC.W=W;REC.H=W*16/9;if(!REC.cv||REC.cv.width!==REC.W){REC.cv=document.createElement('canvas');REC.cv.width=REC.W;REC.cv.height=REC.H;REC.g=REC.cv.getContext('2d',{alpha:false});REC.hud=document.createElement('canvas');REC.hud.width=REC.W;REC.hud.height=REC.H;REC.hg=REC.hud.getContext('2d')}
  REC.g.fillStyle='#06070a';REC.g.fillRect(0,0,REC.W,REC.H);
  const vs=REC.cv.captureStream(+S.recF||60);const tracks=[...vs.getVideoTracks()];if(recDest)tracks.push(...recDest.stream.getAudioTracks());
  const opts={videoBitsPerSecond:W>=1080?(+S.recF>30?16e6:12e6):8e6,audioBitsPerSecond:160000};if(mime)opts.mimeType=mime;
  try{REC.mr=new MediaRecorder(new MediaStream(tracks),opts)}catch(e){try{REC.mr=new MediaRecorder(new MediaStream(tracks))}catch(e2){$('#recFmt').textContent='Recording could not start in this browser.';return}}
- REC.mime=REC.mr.mimeType||mime||'video/webm';REC.chunks=[];REC.discard=false;REC.match=`${side[0].name} vs ${side[1].name}`;
+ REC.mime=REC.mr.mimeType||mime||'video/webm';REC.teams=[side[0].name,side[1].name];REC.when=stamp();REC.chunks=[];REC.discard=false;REC.match=`${side[0].name} vs ${side[1].name}`;
  const mr=REC.mr;mr.ondataavailable=e=>{if(e.data&&e.data.size)REC.chunks.push(e.data)};mr.onstop=()=>recDone(mr);
- mr.start(250);REC.on=true;REC.t0=performance.now();REC.stopAt=0;REC.sec=-1;document.body.classList.add('rec');$('#recStop').hidden=false;fit();
+ mr.start(1000);REC.on=true;REC.t0=performance.now();REC.stopAt=0;REC.sec=-1;hudLast='';
 }
-function recStop(discard){if(!REC.on)return;REC.on=false;REC.discard=!!discard;REC.final=[...score];try{REC.mr.stop()}catch(e){}document.body.classList.remove('rec');$('#recStop').hidden=true;fit()}
-function recDone(mr){
+function recStop(discard){if(!REC.on)return;REC.on=false;REC.discard=!!discard;REC.final=[...score];try{REC.mr.stop()}catch(e){}}
+/* ---- saving into the chosen folder ---- */
+const FS=!!window.showDirectoryPicker;let ROOT=null;
+const clean=t=>t.replace(/[\\/:*?"<>|]+/g,'').replace(/\s+/g,' ').trim();
+function idb(){return new Promise((res,rej)=>{try{const r=indexedDB.open('ballDerbyV4',1);r.onupgradeneeded=()=>r.result.createObjectStore('h');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
+async function idbGet(k){const d=await idb();return new Promise(r=>{const q=d.transaction('h').objectStore('h').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)})}
+async function idbSet(k,v){const d=await idb();return new Promise(r=>{const t=d.transaction('h','readwrite');t.objectStore('h').put(v,k);t.oncomplete=()=>r();t.onerror=()=>r()})}
+function showFolder(){$('#folderName').textContent=ROOT?ROOT.name:(FS?'No folder chosen yet':'Downloads folder (this browser cannot pick folders)');$('#pickFolder').hidden=!FS}
+async function pickFolder(){try{ROOT=await window.showDirectoryPicker({id:'ballderby',mode:'readwrite',startIn:'videos'});await idbSet('root',ROOT);showFolder();return true}catch(e){return false}}
+async function ensureFolder(){ // called from the Kick off click
+ if(!FS)return false;
+ if(ROOT){try{let p=await ROOT.queryPermission({mode:'readwrite'});if(p!=='granted')p=await ROOT.requestPermission({mode:'readwrite'});if(p==='granted')return true}catch(e){}}
+ return pickFolder();
+}
+function stamp(){const d=new Date(),z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}-${z(d.getMinutes())}-${z(d.getSeconds())}`}
+function logSaved(where,ok){const li=document.createElement('li');li.innerHTML=ok?`<b>Saved</b> ${where.replace(/</g,'&lt;')}`:`<b>Downloaded</b> ${where.replace(/</g,'&lt;')}`;const l=$('#savedList');l.prepend(li);while(l.children.length>6)l.lastElementChild.remove()}
+async function recDone(mr){
  if(REC.discard||mr!==REC.mr)return;const blob=new Blob(REC.chunks,{type:REC.mime.split(';')[0]}),ext=REC.mime.includes('mp4')?'mp4':'webm';
- const name=`${slug(side[0].name)}-vs-${slug(side[1].name)}-${REC.final[0]}-${REC.final[1]}.${ext}`,url=URL.createObjectURL(blob),mb=(blob.size/1048576).toFixed(1);
- const d=document.createElement('div');d.className='clip';
- d.innerHTML=`<video src="${url}" controls playsinline></video><div class="row"><a class="btn go" href="${url}" download="${name}">Download ${ext.toUpperCase()}</a><span class="note">${REC.W}×${REC.H} · ${mb} MB</span></div>`;
- const out=$('#recOut');out.prepend(d);while(out.children.length>3){const v=out.lastElementChild.querySelector('a');URL.revokeObjectURL(v.href);out.lastElementChild.remove()}
- if(S.recDl){try{d.querySelector('a').click()}catch(e){}}
+ const h=clean(REC.teams[0]),a=clean(REC.teams[1]),folder=`${h} vs ${a}`,file=`${h} ${REC.final[0]}-${REC.final[1]} ${a} (${REC.when}).${ext}`;
+ if(ROOT){try{const dir=await ROOT.getDirectoryHandle(folder,{create:true}),fh=await dir.getFileHandle(file,{create:true}),w=await fh.createWritable();await w.write(blob);await w.close();logSaved(`${ROOT.name}/${folder}/${file}`,true);return}catch(e){console.warn(e)}}
+ const url=URL.createObjectURL(blob),el=document.createElement('a');el.href=url;el.download=`${folder} - ${file}`;document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);logSaved(`${folder} - ${file}`,false);
 }
-$('#recStop').addEventListener('click',()=>recStop(false));
-{const f=pickMime();$('#recFmt').textContent=!window.MediaRecorder?'Recording needs Chrome, Edge or Firefox.':`Saves as ${f.includes('mp4')?'MP4':'WebM'} with game sound. YouTube accepts both.`}
-const bindRec=(id,k,type)=>{const el=$(id);if(type==='chk'){el.checked=S[k];el.addEventListener('change',()=>{S[k]=el.checked;save()})}else{el.value=S[k];el.addEventListener('input',()=>{S[k]=type==='num'?+el.value:el.value;if(k==='recTail')$('#tailV').textContent=el.value;save()})}};
-bindRec('#recOn','rec','chk');bindRec('#recDl','recDl','chk');bindRec('#recQ','recQ');bindRec('#recF','recF');bindRec('#recTail','recTail','num');$('#tailV').textContent=S.recTail;
+$('#pickFolder').addEventListener('click',pickFolder);
+idbGet('root').then(h=>{if(h){ROOT=h}showFolder()}).catch(()=>showFolder());
+{const f=pickMime();$('#recFmt').textContent=!window.MediaRecorder?'Saving videos needs Chrome or Edge.':`Videos save as ${f.includes('mp4')?'MP4':'WebM'} with game sound.${FS?'':' This browser cannot pick a folder, so videos go to Downloads. Use Chrome or Edge for folder saving.'}`}
+const bindRec=(id,k,type)=>{const el=$(id);if(type==='chk'){el.checked=S[k];el.addEventListener('change',()=>{S[k]=el.checked;save();fit()})}else{el.value=S[k];el.addEventListener('input',()=>{S[k]=type==='num'?+el.value:el.value;if(k==='recTail')$('#tailV').textContent=el.value;save();if(k==='recQ')fit()})}};
+bindRec('#recOn','rec','chk');bindRec('#recQ','recQ');bindRec('#recF','recF');bindRec('#recTail','recTail','num');$('#tailV').textContent=S.recTail;
 
 /* ---------------- LAYOUT ---------------- */
 function fit(){
  const wrap=$('#stageWrap'),studioOn=document.body.classList.contains('studio'),narrow=innerWidth<=860&&!studioOn;
  const pad=studioOn?0:(narrow?24:32),aw=wrap.clientWidth-pad,ah=(narrow?innerHeight*.8:innerHeight)-pad;
  const s=Math.max(.3,Math.min(aw/360,ah/640));$('#stageBox').style.setProperty('--s',s);
- const sp=Math.min(3,(window.devicePixelRatio||1)*s),pr=REC.on?REC.W/360:sp;renderer.setPixelRatio(pr);renderer.setSize(360,640,false);
- const hc=$('#hud');hudK=sp;hc.width=Math.round(360*sp);hc.height=Math.round(640*sp);
+ const sp=Math.min(3,(window.devicePixelRatio||1)*s),pr=S.rec?Math.max(sp,(S.recQ==='720'?720:1080)/360):sp;renderer.setPixelRatio(pr);renderer.setSize(360,640,false);
+ const hc=$('#hud');hudK=sp;hc.width=Math.round(360*sp);hc.height=Math.round(640*sp);hudLast='';
  if(composer){composer.setPixelRatio(pr);composer.setSize(360,640)}
 }
 addEventListener('resize',fit);
